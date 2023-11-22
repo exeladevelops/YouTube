@@ -30,8 +30,3 @@ Endpoints for streaming or searching music on YouTube.
 - [Stream](/.github/docs/stream.md) : `GET /api/stream/?auth=:string&videoId=:string`
 - [Search](/.github/docs/search.md) : `GET /api/search/?auth=:string&query=:string&limit=:number`
 - [Playlist](.github/docs/playlist.md) : `GET /api/playlist/?auth=:string&playlistId=:string`
-
-# Roadmap
-
-- [ ] Save Videos
-- [ ] Create Playlists
