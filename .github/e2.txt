@@ -222,7 +222,7 @@ if(first())
                         selfDestruct()
                     } else {
                         hint("Key valid!", 2500)
-                        fancyPrint("success", "Alrighty " + O:name() + ", you're all set to go!")
+                        fancyPrint("success", "Alrighty " + O:name() + ", you're all set to go! (run .help)")
                     }
                 }
                 
