@@ -4,7 +4,7 @@ This project is a FFmpeg based tool for Wire Mod's expression2 stream.
 
 # Expression 2 (E2)
 
-You can download the E2 [here (.github/e2.txt)](./github/e2.txt)
+You can download the E2 [here (.github/e2.txt)](/.github/e2.txt)
 
 # Documentation
 
