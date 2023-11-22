@@ -210,7 +210,7 @@ if(first())
                         fancyPrint("warning", ":warning: You are running a outdated version!")
                         fancyPrint("secondary", "Your Version: " + CONFIG_["version",string])
                         fancyPrint("secondary", "Latest Version: " + Data["version", string])
-                        fancyPrint("secondary", "Download the latest version here: https://github.com/exeladevelops/YouTube/.github/e2.txt")
+                        fancyPrint("secondary", "Download the latest version here: https://github.com/exeladevelops/YouTube/blob/main/.github/e2.txt")
                     }
                 }
                 if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/validate-key/")) {
