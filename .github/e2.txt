@@ -1,0 +1,293 @@
+# https://github.com/exeladevelops/YouTube
+@name Alex's Public Music
+@persist [O E]:entity
+@persist [CONFIG_ Colors]:table ApiKey:string Loading
+@persist [DLSongs]:dlistview [SongFrame]:dframe [Songs]:table
+
+if(first())
+{
+    
+    Loading = 1
+    
+    # [ Functions ]
+        function fancyPrint(Variant:string, Text:string){
+            local Colors = table(
+                "success" = vec(110, 224, 139),
+                "warning" = vec(224, 224, 110),
+                "error" = vec(224, 110, 110),
+                "default" = vec(224, 110, 186),
+                "secondary" = vec(225)
+            )
+            
+            printColor(Colors[Variant,vector], " | ", vec(255, 255, 255), Text)
+        }
+        
+        O = owner()
+        E = entity()
+        runOnChat(1)
+        runOnHTTP(1)
+        runOnFile(1)
+        runOnVgui(1)
+        streamDisable3D(1)
+
+    # [ Configuration ]
+        CONFIG_ = table(
+            "baseUrl" = "https://youtube.exeladevelops.com",
+            "version" = "BETA 0.0.1",
+            "searchLimit" = 10,
+            "prefix" = ".",
+            "entity" = E,
+            "hideChat" = 1,
+            "volume" = 1
+        )
+    ##
+
+    # [ "Auto" Update ]
+        httpRequest(CONFIG_["baseUrl",string] + "/api/e2")
+
+    # [ Validate Key ]
+        if(fileCanLoad()){
+            fileLoad("exeladevelops/YouTube/key.txt")
+        }
+        
+    # [ Welcome ]
+    fancyPrint("default", "Welcome, " + O:name() + "!")
+    fancyPrint("secondary", "Please wait while I get some stuff ready, I'll let you know when I'm done.")
+}
+
+# [ Chat Handler ]
+    if(chatClk(O))
+    {
+        local LS = O:lastSaid():explode(" ")
+        local Command = LS[1,string]:lower():sub(CONFIG_["prefix",string]:length() + 1,LS[1,string]:length())
+        
+        if(Loading & Command != "setkey"){
+            fancyPrint("error", "Please wait, I'm still getting some things ready...")    
+        } else {    
+            if(LS[1,string]:lower():sub(1,CONFIG_["prefix",string]:length()) == CONFIG_["prefix",string])
+            {
+                hideChat(CONFIG_["hideChat",number])  
+                LS:shift()
+                
+                switch(Command)
+                {
+                    case "help",
+                        fancyPrint("default", ":headphones: exeladevelops/YouTube")
+                        fancyPrint("secondary", "FFmpeg based YouTube streaming")
+                        fancyPrint("default", "Commands")
+                        fancyPrint("secondary", "<required> - (optional)")
+                        fancyPrint("secondary", "help: Displays some fancy information about this E2!")
+                        fancyPrint("secondary", "setkey <string>: Set your API key")
+                        fancyPrint("secondary", "prefix <string>: Change the prefix for commands")
+                        fancyPrint("secondary", "hide: Toggle chat feedback")
+                        fancyPrint("secondary", "playowner: Toggle rather the streams plays on the E2 or the owner")
+                        fancyPrint("secondary", "play <string>: Takes in a YouTube video ID and streams the audio back")
+                        fancyPrint("secondary", "search <string>: Takes in a query and shows the top 10 youtube videos to stream.")
+                        fancyPrint("secondary", "volume <number>: Adjust the stream volume")
+                        fancyPrint("secondary", "stop: Stops the stream...")
+                    break
+                    
+                    case "setkey",
+                        ApiKey = LS:concat(" ")
+
+                        if(ApiKey:length() > 0){
+                            if(fileCanWrite()) {
+                                fileWrite("exeladevelops/YouTube/key.txt", ApiKey)
+                                fancyPrint("success", "Your key has been saved!")
+                                if(httpCanRequest()){
+                                    httpRequest(CONFIG_["baseUrl",string] + "/api/validate-key/" + ApiKey)
+                                } else {
+                                    timer("validateKey", 5000)
+                                }
+                                hint("Validating key...", 5000)
+                            } else {
+                                fancyPrint("error", "Unable to save key, try again later.")
+                            }  
+                        } else {
+                            if(fileCanWrite()) {
+                                fileWrite("exeladevelops/YouTube/key.txt", "")
+                                fancyPrint("success", "Poof, your key has been reset.")
+                            } else {
+                                fancyPrint("error", "Unable to save key, try again later.")
+                            }  
+                        }
+                    break
+                    
+                    case "prefix",
+                        local Prefix = LS:concat(" ")
+                        
+                        if(Prefix:length() > 0)
+                        {
+                            CONFIG_["prefix",string] = Prefix
+                            fancyPrint("default", "You betcha, changed prefix to '" + Prefix + "'.")
+                        }
+                        else {
+                            fancyPrint("error", "Silly you, the prefix can't be blank!")
+                        }
+                    break
+                    
+                    case "hide",
+                        CONFIG_["hideChat",number] = !(CONFIG_["hideChat",number])
+                        fancyPrint("default", "Sneak you, chat feedback will now be " + (CONFIG_["hideChat",number] ? "hidden." : "displayed."))
+                    break
+                    
+                    case "playowner",
+                        PlayOwner = (CONFIG_["entity",entity] == O)
+                        CONFIG_["entity",entity] = (PlayOwner ? E : O)
+                        fancyPrint("default", "Poof, music is now playing out of " + (PlayOwner ? "me :)" : "your bum!") + " (this will be applied apon your next played song)")
+                    break
+        
+                    case "volume",
+                        local Volume = LS[1,string]:lower():toNumber()
+                        
+                        if(Volume)
+                        {
+                             Volume = clamp((Volume < 1 ? Volume : Volume / 10),0,1)
+                             CONFIG_["volume",number] = Volume
+                            
+                             streamVolume(1,Volume)
+                             fancyPrint("success", "Don't want to hurt those ears, stream volume set to " + Volume + ".")  
+                        }
+                        else
+                        {
+                            fancyPrint("error", "Volume must be of the type 'number'.")
+                        }
+                    break
+                    
+                    case "stop",
+                        streamStop(1)
+                        fancyPrint("success", "No more music... :sad:")
+                    break 
+
+                    case "play",
+                        local VideoID = LS[1,string]
+        
+                        if(VideoID){
+                            if(VideoID:find("https://www.youtube.com/watch?v=")){ VideoID = VideoID:sub(33) }
+                            if(VideoID:find("https://youtu.be/")){ VideoID = VideoID:sub(17) }
+                            
+                            if(httpCanRequest()){
+                                httpRequest(CONFIG_["baseUrl",string] + "/api/stream?auth=" + ApiKey + "&videoId=" + VideoID + "&extended=true")   
+                            } else {
+                                fancyPrint("error", "Unable to make request at this time, try again in 5 seconds.")
+                            }
+                        }else{
+                            fancyPrint("error", "VideoID must be type of 'string'")
+                        }
+                    break
+                    
+                    case "search",
+                        local Query = LS:concat(" ")
+                        
+                        if(Query){                
+                            fancyPrint("default", "Searching...")
+                            if(httpCanRequest()){
+                                httpRequest(CONFIG_["baseUrl",string] + "/api/search?auth=" + ApiKey + "&query=" + Query + "&limit=" + CONFIG_["searchLimit",number])
+                            } else {
+                                fancyPrint("error", "Unable to make request at this time, try again in 5 seconds.")
+                            }
+                        }else{
+                            fancyPrint("error", "Query must be type of 'string'")
+                        }
+                }
+            }   
+        }
+    }
+
+# [ HTTP Handler ]
+    if(httpClk()){
+        if(httpSuccess() & httpData()){
+            local RequestURL = httpRequestUrl()
+            local Data = jsonDecode(httpData())
+                      
+            if(!Data["success",number]){
+                fancyPrint("error", "An error has occurred.")
+                fancyPrint("secondary", Data["error",string])
+                print(_HUD_PRINTCONSOLE,"[exeladevelops/youtube] Error: " + Data["error",string])
+            }else{
+                if(RequestURL == CONFIG_["baseUrl",string] + "/api/e2"){
+                    if(CONFIG_["version",string] != Data["version", string]){
+                        fancyPrint("warning", ":warning: You are running a outdated version!")
+                        fancyPrint("secondary", "Your Version: " + CONFIG_["version",string])
+                        fancyPrint("secondary", "Latest Version: " + Data["version", string])
+                        fancyPrint("secondary", "Download the latest version here: https://github.com/exeladevelops/YouTube/.github/e2.txt")
+                    }
+                }
+                if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/validate-key/")) {
+                    Loading = 0
+                    if(!Data["valid",number]){
+                        fancyPrint("warning", ":warning: Your saved key is invalid!") 
+                    } elseif(Data["steamid",string] != O:steamID64()){
+                        fancyPrint("error", "Your saved key is not registered under your SteamID!")
+                        selfDestruct()
+                    } else {
+                        hint("Key valid!", 2500)
+                        fancyPrint("success", "Alrighty " + O:name() + ", you're all set to go!")
+                    }
+                }
+                
+                if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/stream")) {
+                    Data = Data["data",table]
+                    CONFIG_["entity",entity]:streamStart(1, Data["streamLink",string], CONFIG_["volume", number])
+                    fancyPrint("default", Data["title",string])
+                    fancyPrint("secondary", Data["artist",string])
+                }
+                
+                if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/search")) {
+                    Songs = Data["data",table]["items",table]
+        
+                    SongFrame = dframe(1)
+                    SongFrame:center()
+                    SongFrame:setSize(600, 205)
+                    SongFrame:setTitle(" Resualts")
+                    SongFrame:setIcon("icon16/book_open.png")
+                    SongFrame:setColor(vec4(36,36,36,200))
+                    SongFrame:setBackgroundBlur(1)
+                    SongFrame:makePopup()
+                    SongFrame:create() 
+                    
+                    DLSongs = dlistview(2, SongFrame)
+                    DLSongs:setMultiSelect(0)
+                    DLSongs:setSize(580,155)
+                    DLSongs:setPos(10,35)
+                    DLSongs:addColumn("Song")
+                    DLSongs:addColumn("Artist")
+                    foreach(K:number, Song:table=Songs){ DLSongs:addLine(Song["title",string], Song["artist",string]) }
+                    DLSongs:create()
+                }
+            }
+        }else{
+            fancyPrint("error", "An error has occurred. {HTTP)") 
+        }
+    }
+
+# [ File Handler ]
+    if (fileClk()) {
+        if(fileLoaded()){
+            ApiKey = fileRead()
+            if(httpCanRequest()){
+                httpRequest(CONFIG_["baseUrl",string] + "/api/validate-key/" + ApiKey)
+            } else {
+                timer("validateKey", 5000)
+            }
+            hint("Validating key...", 5000)
+        } else {
+            fancyPrint("warning", ":warning: You do not have a saved API key!")
+            fancyPrint("secondary", "Visit " + CONFIG_["baseUrl",string] + " and register to obtain a key.")
+            fancyPrint("secondary", "To set your API key run: " + CONFIG_["prefix",string] + "setkey " + "(your-key-here)")
+        }
+    }
+
+# [ VGUI Handler ]
+    if(vguiClk() && vguiClkPanelID() == DLSongs){
+        local Song = Songs[DLSongs:getIndex(vguiClkPlayer()),table]
+        
+        CONFIG_["entity",entity]:streamStart(1, Song["streamLink",string], CONFIG_["volume", number])
+        fancyPrint("default", Song["title",string])
+        fancyPrint("secondary", Song["artist",string])
+        
+        SongFrame:closePlayer(vguiClkPlayer())
+    }
+
+# [ Timers ]
+    if ( clk("validateKey") ) { httpRequest(CONFIG_["baseUrl",string] + "/api/validate-key/" + ApiKey) }
