@@ -53,9 +53,9 @@ export default async function handler(
       return res.status(400).json({ error: "No video results found" });
     }
 
-    searchResults.items = searchResults.items.filter((item: any) => item.type === 'video');
-
-    const items = searchResults.items.map((item: any) => ({
+    const items = searchResults.items
+    .filter((item: any) => item.type === 'video' && item.duration !== null)
+    .map((item: any) => ({
       videoID: item.id,
       title: item.title,
       artist: item.author.name,
