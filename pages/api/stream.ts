@@ -58,7 +58,7 @@ export default async function handler(
         data: {
           title: info.videoDetails.title,
           artist: info.videoDetails.author.name,
-          duration: info.videoDetails.lengthSeconds,
+          duration: parseInt(info.videoDetails.lengthSeconds, 10),
           thumbnail: info.videoDetails.thumbnails[0].url,
           streamLink: `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}/api/stream/?auth=${auth}&videoId=${videoId}`,
         },
