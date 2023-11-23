@@ -1,14 +1,11 @@
 # https://github.com/exeladevelops/YouTube
-@name Alex's Public Music
+@name Alex's Public YouTube Player
 @persist [O E]:entity
 @persist [CONFIG_ Colors]:table ApiKey:string Loading
-@persist [DLSongs]:dlistview [SongFrame]:dframe [Songs]:table
+@persist [SearchSongFrame, QueueFrame]:dframe [SearchDLSongs, QueueDLSongs]:dlistview [QueueSkipButton, QueueRemoveButton]:dbutton [Songs]:table Queue:table
 
 if(first())
 {
-    
-    Loading = 1
-    
     # [ Functions ]
         function fancyPrint(Variant:string, Text:string){
             local Colors = table(
@@ -21,7 +18,8 @@ if(first())
             
             printColor(Colors[Variant,vector], " | ", vec(255, 255, 255), Text)
         }
-        
+               
+        Loading = 1
         O = owner()
         E = entity()
         runOnChat(1)
@@ -33,7 +31,7 @@ if(first())
     # [ Configuration ]
         CONFIG_ = table(
             "baseUrl" = "https://youtube.exeladevelops.com",
-            "version" = "BETA 0.0.1",
+            "version" = "v1.0.0-stable",
             "searchLimit" = 10,
             "prefix" = ".",
             "entity" = E,
@@ -76,15 +74,17 @@ if(first())
                         fancyPrint("secondary", "FFmpeg based YouTube streaming")
                         fancyPrint("default", "Commands")
                         fancyPrint("secondary", "<required> - (optional)")
-                        fancyPrint("secondary", "help: Displays some fancy information about this E2!")
-                        fancyPrint("secondary", "setkey <string>: Set your API key")
-                        fancyPrint("secondary", "prefix <string>: Change the prefix for commands")
-                        fancyPrint("secondary", "hide: Toggle chat feedback")
-                        fancyPrint("secondary", "playowner: Toggle rather the streams plays on the E2 or the owner")
-                        fancyPrint("secondary", "play <string>: Takes in a YouTube video ID and streams the audio back")
-                        fancyPrint("secondary", "search <string>: Takes in a query and shows the top 10 youtube videos to stream.")
-                        fancyPrint("secondary", "volume <number>: Adjust the stream volume")
-                        fancyPrint("secondary", "stop: Stops the stream...")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "help: Displays some fancy information about this E2!")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "setkey <string>: Set your API key")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "prefix <string>: Change the prefix for commands")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "hide: Toggle chat feedback")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "playowner: Toggle rather the streams plays on the E2 or the owner")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "play <string>: Takes in a YouTube video ID and streams the audio back")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "search <string>: Takes in a query and shows the top 10 youtube videos to stream.")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "skip: Skips the current song")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "queue: Displays the current queued videos")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "volume <number>: Adjust the stream volume")
+                        fancyPrint("secondary", CONFIG_["prefix",string] + "stop: Stops the stream...")
                     break
                     
                     case "setkey",
@@ -142,11 +142,11 @@ if(first())
                         
                         if(Volume)
                         {
-                             Volume = clamp((Volume < 1 ? Volume : Volume / 10),0,1)
+                             Volume = clamp((Volume < 1 ? Volume : Volume / 100),0,1)
                              CONFIG_["volume",number] = Volume
                             
                              streamVolume(1,Volume)
-                             fancyPrint("success", "Don't want to hurt those ears, stream volume set to " + Volume + ".")  
+                             fancyPrint("success", "Don't want to hurt those ears, stream volume set to " +  Volume*100 + "%!")  
                         }
                         else
                         {
@@ -156,8 +156,53 @@ if(first())
                     
                     case "stop",
                         streamStop(1)
-                        fancyPrint("success", "No more music... :sad:")
+                        fancyPrint("success", "No more music... :disappointed:")
                     break 
+                    
+                    case "skip",
+                        if(Queue:count() > 0){
+                            stoptimer("nextSong")
+                            timer("nextSong", 10)
+                            fancyPrint("success", "Woosh")
+                        } else {
+                            fancyPrint("error", "There is nothing to skip...")
+                        }
+                    break
+                    
+                    case "queue",
+                        QueueFrame = dframe(3)
+                        QueueFrame:center()
+                        QueueFrame:setSize(400, 600)
+                        QueueFrame:setTitle(" Queue")
+                        QueueFrame:setIcon("icon16/book_addresses.png")
+                        QueueFrame:setColor(vec4(36,36,36,200))
+                        QueueFrame:setBackgroundBlur(1)
+                        QueueFrame:makePopup()
+                        QueueFrame:create() 
+                        
+                        QueueDLSongs = dlistview(4, QueueFrame)
+                        QueueDLSongs:setMultiSelect(0)
+                        QueueDLSongs:setSize(380,485)
+                        QueueDLSongs:setPos(10,35)
+                        QueueDLSongs:addColumn("Video")
+                        QueueDLSongs:addColumn("Creator")
+                        foreach(K:number, Song:table=Queue){ QueueDLSongs:addLine(Song["title",string], Song["artist",string]) }
+                        QueueDLSongs:create()
+                        
+                        QueueSkipButton = dbutton(5, QueueFrame)
+                        QueueSkipButton:setSize(380, 30)
+                        QueueSkipButton:setPos(10, 525)
+                        QueueSkipButton:setText("Skip Video")
+                        QueueSkipButton:setIcon("icon16/control_fastforward_blue.png")
+                        QueueSkipButton:create()
+                        
+                        QueueRemoveButton = dbutton(6, QueueFrame)
+                        QueueRemoveButton:setSize(380, 30)
+                        QueueRemoveButton:setPos(10, 560)
+                        QueueRemoveButton:setText("Remove Video")
+                        QueueRemoveButton:setIcon("icon16/delete.png")
+                        QueueRemoveButton:create()
+                    break
 
                     case "play",
                         local VideoID = LS[1,string]
@@ -189,6 +234,7 @@ if(first())
                         }else{
                             fancyPrint("error", "Query must be type of 'string'")
                         }
+                    break
                 }
             }   
         }
@@ -199,7 +245,7 @@ if(first())
         if(httpSuccess() & httpData()){
             local RequestURL = httpRequestUrl()
             local Data = jsonDecode(httpData())
-                      
+                        
             if(!Data["success",number]){
                 fancyPrint("error", "An error has occurred.")
                 fancyPrint("secondary", Data["error",string])
@@ -210,7 +256,7 @@ if(first())
                         fancyPrint("warning", ":warning: You are running a outdated version!")
                         fancyPrint("secondary", "Your Version: " + CONFIG_["version",string])
                         fancyPrint("secondary", "Latest Version: " + Data["version", string])
-                        fancyPrint("secondary", "Download the latest version here: https://github.com/exeladevelops/YouTube/blob/main/.github/e2.txt")
+                        fancyPrint("secondary", "Download the latest version here: https://github.com/exeladevelops/YouTube/releases")
                     }
                 }
                 if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/validate-key/")) {
@@ -221,39 +267,44 @@ if(first())
                         fancyPrint("error", "Your saved key is not registered under your SteamID!")
                         selfDestruct()
                     } else {
-                        hint("Key valid!", 2500)
-                        fancyPrint("success", "Alrighty " + O:name() + ", you're all set to go! (run .help)")
+                        hint("Key valid!", 3.5)
+                        fancyPrint("success", "Alrighty " + O:name() + ", you're all set to go!")
+                        fancyPrint("secondary", "Say '" + CONFIG_["prefix",string] + "help' to view a list of commands.")
                     }
                 }
                 
                 if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/stream")) {
                     Data = Data["data",table]
-                    CONFIG_["entity",entity]:streamStart(1, Data["streamLink",string], CONFIG_["volume", number])
-                    fancyPrint("default", Data["title",string])
-                    fancyPrint("secondary", Data["artist",string])
+                    Queue:pushTable(Data)
+                    
+                    if(invert(getTimers())["nextSong",number]!=-1){
+                        timer("nextSong",10)
+                    }
+                    
+                    fancyPrint("success", "Added " + Data["title",string] + " to the queue! ")
                 }
                 
                 if(RequestURL:find(CONFIG_["baseUrl",string] + "/api/search")) {
                     Songs = Data["data",table]["items",table]
         
-                    SongFrame = dframe(1)
-                    SongFrame:center()
-                    SongFrame:setSize(600, 205)
-                    SongFrame:setTitle(" Resualts")
-                    SongFrame:setIcon("icon16/book_open.png")
-                    SongFrame:setColor(vec4(36,36,36,200))
-                    SongFrame:setBackgroundBlur(1)
-                    SongFrame:makePopup()
-                    SongFrame:create() 
+                    SearchSongFrame = dframe(1)
+                    SearchSongFrame:center()
+                    SearchSongFrame:setSize(600, 205)
+                    SearchSongFrame:setTitle(" Resualts")
+                    SearchSongFrame:setIcon("icon16/book_open.png")
+                    SearchSongFrame:setColor(vec4(36,36,36,200))
+                    SearchSongFrame:setBackgroundBlur(1)
+                    SearchSongFrame:makePopup()
+                    SearchSongFrame:create() 
                     
-                    DLSongs = dlistview(2, SongFrame)
-                    DLSongs:setMultiSelect(0)
-                    DLSongs:setSize(580,155)
-                    DLSongs:setPos(10,35)
-                    DLSongs:addColumn("Song")
-                    DLSongs:addColumn("Artist")
-                    foreach(K:number, Song:table=Songs){ DLSongs:addLine(Song["title",string], Song["artist",string]) }
-                    DLSongs:create()
+                    SearchDLSongs = dlistview(2, SearchSongFrame)
+                    SearchDLSongs:setMultiSelect(0)
+                    SearchDLSongs:setSize(580,155)
+                    SearchDLSongs:setPos(10,35)
+                    SearchDLSongs:addColumn("Video")
+                    SearchDLSongs:addColumn("Creator")
+                    foreach(K:number, Song:table=Songs){ SearchDLSongs:addLine(Song["title",string], Song["artist",string]) }
+                    SearchDLSongs:create()
                 }
             }
         }else{
@@ -278,16 +329,57 @@ if(first())
         }
     }
 
+
+
 # [ VGUI Handler ]
-    if(vguiClk() && vguiClkPanelID() == DLSongs){
-        local Song = Songs[DLSongs:getIndex(vguiClkPlayer()),table]
+    if(vguiClk()){
+        if(vguiClkPanelID() == SearchDLSongs){
+            SearchSongFrame:closePlayer(vguiClkPlayer())
         
-        CONFIG_["entity",entity]:streamStart(1, Song["streamLink",string], CONFIG_["volume", number])
-        fancyPrint("default", Song["title",string])
-        fancyPrint("secondary", Song["artist",string])
+            local Song = Songs[SearchDLSongs:getIndex(vguiClkPlayer()),table]
+            Queue:pushTable(Song)
+            
+            if(invert(getTimers())["nextSong",number]!=-1){
+                timer("nextSong",0)
+            }
+            
+            fancyPrint("success", "Added " + Song["title",string] + " to the queue! ")   
+        } elseif(vguiClkPanelID() == QueueSkipButton) {
+            QueueFrame:closePlayer(vguiClkPlayer())
         
-        SongFrame:closePlayer(vguiClkPlayer())
+            if(Queue:count() > 0){
+                stoptimer("nextSong")
+                timer("nextSong", 10)
+                fancyPrint("success", "Woosh")
+            } else {
+                fancyPrint("error", "There is nothing to skip...")
+            }
+        } elseif(vguiClkPanelID() == QueueRemoveButton) {
+            local Index = QueueDLSongs:getIndex(vguiClkPlayer())
+            
+            Queue:removeTable(Index)
+            QueueDLSongs:removeLine(Index)
+            QueueDLSongs:modify()
+        } 
     }
 
 # [ Timers ]
     if ( clk("validateKey") ) { httpRequest(CONFIG_["baseUrl",string] + "/api/validate-key/" + ApiKey) }
+    
+    if ( clk("resetName") ) { setName("Alex's Public Music") }
+    
+    if (clk("nextSong")){
+        local Song = Queue[1,table]
+        if(Song["duration",number]){
+            Queue:removeTable(1)
+        
+            CONFIG_["entity",entity]:streamStart(1, Song["streamLink",string], CONFIG_["volume", number])
+        
+            fancyPrint("default", Song["title",string])
+            fancyPrint("secondary", Song["artist",string])
+            setName("Now playing: " + Song["title",string] + " by " + Song["artist",string])
+            timer("nextSong", Song["duration",number]*1000 + 15)
+        } else {
+            setName("Alex's Public Music")
+        }
+    }
