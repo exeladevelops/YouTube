@@ -6,6 +6,6 @@ export default function handler(
 ) {
   res.json({
     success: true,
-    version: "BETA 0.0.1",
+    version: "v1.0.0-stable",
   });
 }
