@@ -5,7 +5,7 @@ import { KeyLib } from "../../lib/key";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   try {
     const { auth, playlistId } = req.query as {
@@ -21,7 +21,9 @@ export default async function handler(
     const user = await UserLib.getUserByKey(key);
 
     if (!user || !user.active) {
-      return res.status(401).json({ error: "Unauthorized: key invalid or not active" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: key invalid or not active" });
     }
 
     if (req.method !== "GET") {
@@ -29,12 +31,18 @@ export default async function handler(
     }
 
     if (!playlistId || Array.isArray(playlistId)) {
-      return res.status(400).json({ success: false, error: "playlistId is required" });
+      return res
+        .status(400)
+        .json({ success: false, error: "playlistId is required" });
     }
 
-    const playlist = await ytpl(playlistId);
+    const modifiedPlaylistId = playlistId.replace("|", "&");
+
+    const playlist = await ytpl(modifiedPlaylistId);
     if (!playlist) {
-      return res.status(400).json({ success: false, error: "No results found" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No results found" });
     }
 
     const items = playlist.items.map((item: any) => ({
