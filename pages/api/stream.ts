@@ -33,7 +33,9 @@ export default async function handler(
     }
 
     if (!user || !user.active) {
-      return res.status(401).json({ error: "Unauthorized: key invalid or not active" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: key invalid or not active" });
     }
 
     if (req.method !== "GET") {
@@ -84,7 +86,8 @@ export default async function handler(
 
     // Use Fluent-ffmpeg to process the audio
     const ffmpegCommand = ffmpeg();
-    ffmpegCommand.input(ytdl(id, { format: audioFormat }))
+    ffmpegCommand
+      .input(ytdl(id, { format: audioFormat }))
       .audioCodec("libmp3lame")
       .audioBitrate(192)
       .format("mp3");

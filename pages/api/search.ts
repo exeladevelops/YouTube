@@ -6,7 +6,7 @@ import { getSeconds } from "../../lib/utils";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   try {
     const { auth, query, limit } = req.query as {
@@ -27,7 +27,9 @@ export default async function handler(
     const user = await UserLib.getUserByKey(key);
 
     if (!user || !user.active) {
-      return res.status(401).json({ error: "Unauthorized: key invalid or not active" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: key invalid or not active" });
     }
 
     if (req.method !== "GET") {
@@ -37,7 +39,9 @@ export default async function handler(
     const limitInt = parseInt(limit, 10) || 1;
 
     if (limitInt <= 0) {
-      return res.status(400).json({ error: "Limit must be a positive integer" });
+      return res
+        .status(400)
+        .json({ error: "Limit must be a positive integer" });
     }
 
     const filters = await ytsr.getFilters(query);
@@ -54,15 +58,15 @@ export default async function handler(
     }
 
     const items = searchResults.items
-    .filter((item: any) => item.type === 'video' && item.duration !== null)
-    .map((item: any) => ({
-      videoID: item.id,
-      title: item.title,
-      artist: item.author.name,
-      duration: getSeconds(item.duration || "00:00:00"),
-      thumbnail: item.bestThumbnail.url,
-      streamLink: `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}/api/stream/?auth=${auth}&videoId=${item.id}`,
-    }));
+      .filter((item: any) => item.type === "video" && item.duration !== null)
+      .map((item: any) => ({
+        videoID: item.id,
+        title: item.title,
+        artist: item.author.name,
+        duration: getSeconds(item.duration || "00:00:00"),
+        thumbnail: item.bestThumbnail.url,
+        streamLink: `${req.headers["x-forwarded-proto"]}://${req.headers["x-forwarded-host"]}/api/stream/?auth=${auth}&videoId=${item.id}`,
+      }));
 
     res.json({
       success: true,

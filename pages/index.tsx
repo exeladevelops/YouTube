@@ -18,7 +18,12 @@ export default function Home() {
     const fetchUser = async () => {
       if (status === "authenticated") {
         try {
-          const response = await fetch(`/api/user/${data?.user?.email?.replace("@steamcommunity.com", "")}`);
+          const response = await fetch(
+            `/api/user/${data?.user?.email?.replace(
+              "@steamcommunity.com",
+              "",
+            )}`,
+          );
 
           if (!response.ok) {
             const errorMessage = await response.text();
@@ -42,9 +47,12 @@ export default function Home() {
 
   const confirmRegenerateKey = async () => {
     try {
-      const response = await fetch(`/api/user/${data?.user?.email?.replace("@steamcommunity.com", "")}`, {
-        method: "PUT",
-      });
+      const response = await fetch(
+        `/api/user/${data?.user?.email?.replace("@steamcommunity.com", "")}`,
+        {
+          method: "PUT",
+        },
+      );
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -104,7 +112,11 @@ export default function Home() {
                 </Text>
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-center gap-3">
-                    <Button variant="secondary" onClick={handleRegenerateKey} className="w-full">
+                    <Button
+                      variant="secondary"
+                      onClick={handleRegenerateKey}
+                      className="w-full"
+                    >
                       Regenerate Key
                     </Button>
                     <Button className="w-full" onClick={() => signOut()}>

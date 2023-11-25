@@ -1,9 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const routes = {
       "/api/stream/": {
@@ -26,11 +23,10 @@ export default function handler(
         limit: { type: "integer", optional: true, default: 1 },
       },
       "/api/validate-key/:key": {
-        description: "Validates a key and returns user information"
+        description: "Validates a key and returns user information",
       },
       "/api/e2": {
-        description:
-          "Returns information about the latest expression 2 build",
+        description: "Returns information about the latest expression 2 build",
       },
     };
 

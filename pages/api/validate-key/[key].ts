@@ -4,13 +4,15 @@ import { KeyLib } from "../../../lib/key";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   try {
     // Input validation
     const { key } = req.query;
     if (!key || typeof key !== "string") {
-      return res.status(400).json({ success: false, error: "Invalid key parameter" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid key parameter" });
     }
 
     const encryptedKey = KeyLib.encrypt(key);
@@ -23,9 +25,13 @@ export default async function handler(
     }
 
     // Success response
-    return res.status(200).json({ success: true, valid: true, steamid: user.steamid });
+    return res
+      .status(200)
+      .json({ success: true, valid: true, steamid: user.steamid });
   } catch (error) {
     console.error("Error in API:", error);
-    return res.status(500).json({ success: false, error: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal Server Error" });
   }
 }
